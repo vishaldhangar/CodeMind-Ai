@@ -50,9 +50,15 @@ class PythonParser:
 
                 if node.module:
 
-                    imports.append({
-                        "module": node.module
-                    })
+                    for alias in node.names:
+
+                        imports.append({
+                            "module": node.module,
+                            "imported_name": alias.name,
+                            "full_import": (
+                                f"{node.module}.{alias.name}"
+                            )
+                        })
 
         return {
             "functions": functions,

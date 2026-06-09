@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from app.api.repository import router as repo_router
 from app.api.scanner import router as scanner_router
 from app.api.ast import router as ast_router
+from app.api.dependency import router as dependency_router
+
 
 app = FastAPI(
     title="CodeMind AI",
@@ -26,6 +28,12 @@ app.include_router(
     ast_router,
     prefix="/ast",
     tags=["AST"]
+)
+
+app.include_router(
+    dependency_router,
+    prefix="/dependencies",
+    tags=["Dependencies"]
 )
 
 @app.get("/")
