@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.repository import router as repo_router
 from app.api.scanner import router as scanner_router
+from app.api.ast import router as ast_router
 
 app = FastAPI(
     title="CodeMind AI",
@@ -18,6 +19,13 @@ app.include_router(
     scanner_router,
     prefix="/scan",
     tags=["Scanner"]
+)
+
+
+app.include_router(
+    ast_router,
+    prefix="/ast",
+    tags=["AST"]
 )
 
 @app.get("/")
