@@ -25,18 +25,34 @@ class PythonParser:
         for node in ast.walk(tree):
 
             if isinstance(node, ast.FunctionDef):
-                functions.append(node.name)
+
+                functions.append({
+                    "name": node.name,
+                    "line": node.lineno
+                })
 
             elif isinstance(node, ast.ClassDef):
-                classes.append(node.name)
+
+                classes.append({
+                    "name": node.name,
+                    "line": node.lineno
+                })
 
             elif isinstance(node, ast.Import):
+
                 for alias in node.names:
-                    imports.append(alias.name)
+
+                    imports.append({
+                        "module": alias.name
+                    })
 
             elif isinstance(node, ast.ImportFrom):
+
                 if node.module:
-                    imports.append(node.module)
+
+                    imports.append({
+                        "module": node.module
+                    })
 
         return {
             "functions": functions,
