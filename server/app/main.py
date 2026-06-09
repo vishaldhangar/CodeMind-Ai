@@ -4,6 +4,8 @@ from app.api.repository import router as repo_router
 from app.api.scanner import router as scanner_router
 from app.api.ast import router as ast_router
 from app.api.dependency import router as dependency_router
+from app.api.dependency_analytics import router as dependency_analytics_router
+
 
 
 app = FastAPI(
@@ -36,7 +38,13 @@ app.include_router(
     tags=["Dependencies"]
 )
 
-@app.get("/")
+app.include_router(
+    dependency_analytics_router,
+    prefix="/dependencies",
+    tags=["Dependency Analytics"]
+)
+
+@app.get("/") 
 def root():
     return {
         "message": "CodeMind AI Backend Running"

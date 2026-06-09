@@ -28,6 +28,7 @@ class DependencyGraphBuilder:
 
                 resolved_module = module
 
+                # Resolve internal modules
                 for i in range(
                     len(module_parts),
                     0,
@@ -42,6 +43,16 @@ class DependencyGraphBuilder:
 
                         resolved_module = candidate
                         break
+
+                # Normalize external imports
+                if (
+                    resolved_module == module
+                    and "." in module
+                ):
+
+                    resolved_module = (
+                        module.split(".")[0]
+                    )
 
                 dependency_type = (
                     "internal"
