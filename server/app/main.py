@@ -5,6 +5,10 @@ from app.api.scanner import router as scanner_router
 from app.api.ast import router as ast_router
 from app.api.dependency import router as dependency_router
 from app.api.dependency_analytics import router as dependency_analytics_router
+from app.api.architecture import router as architecture_router
+from app.api.call_graph import router as call_graph_router
+from app.api.routes import router as routes_router
+from app.api.database import router as database_router
 
 
 
@@ -43,6 +47,31 @@ app.include_router(
     prefix="/dependencies",
     tags=["Dependency Analytics"]
 )
+
+app.include_router(
+    architecture_router,
+    prefix="/architecture",
+    tags=["Architecture"]
+)
+
+app.include_router(
+    call_graph_router,
+    prefix="/callgraph",
+    tags=["Call Graph"]
+)
+
+app.include_router(
+    routes_router,
+    prefix="/routes",
+    tags=["Routes"]
+)
+
+app.include_router(
+    database_router,
+    prefix="/database",
+    tags=["Database"]
+)
+
 
 @app.get("/") 
 def root():
