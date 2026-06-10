@@ -10,6 +10,7 @@ from app.api.call_graph import router as call_graph_router
 from app.api.routes import router as routes_router
 from app.api.database import router as database_router
 from app.api.workflow import router as workflow_router
+from app.api.impact import router as impact_router
 
 
 
@@ -77,6 +78,12 @@ app.include_router(
     workflow_router,
     prefix="/workflow",
     tags=["Workflow"]
+)
+
+app.include_router(
+    impact_router,
+    prefix="/impact",
+    tags=["Impact Analysis"]
 )
 
 
