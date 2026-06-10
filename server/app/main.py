@@ -9,6 +9,7 @@ from app.api.architecture import router as architecture_router
 from app.api.call_graph import router as call_graph_router
 from app.api.routes import router as routes_router
 from app.api.database import router as database_router
+from app.api.workflow import router as workflow_router
 
 
 
@@ -70,6 +71,12 @@ app.include_router(
     database_router,
     prefix="/database",
     tags=["Database"]
+)
+
+app.include_router(
+    workflow_router,
+    prefix="/workflow",
+    tags=["Workflow"]
 )
 
 
