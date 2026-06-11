@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.repository import router as repo_router
 from app.api.scanner import router as scanner_router
@@ -18,8 +20,66 @@ from app.api.assistant import router as assistant_router
 
 app = FastAPI(
     title="CodeMind AI",
-    version="1.0.0"
+    version="1.0.0",
+    description=(
+        "Repository intelligence backend. "
+        "Provides architecture analysis, call graphs, "
+        "workflow tracing, impact analysis, "
+        "knowledge graph, and AI assistant."
+    )
 )
+
+# ── CORS ─────────────────────────────────────────────
+# Allow the frontend dev server to call the API.
+# Update ALLOWED_ORIGINS for production.
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",   # Next.js / CRA
+    "http://localhost:5173",   # Vite
+    "http://localhost:4173",   # Vite preview
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ── Global error handlers ─────────────────────────────
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(
+    request: Request,
+    exc: HTTPException
+):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error":       exc.detail,
+            "status_code": exc.status_code,
+            "path":        str(request.url)
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(
+    request: Request,
+    exc: Exception
+):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error":       str(exc),
+            "type":        type(exc).__name__,
+            "status_code": 500,
+            "path":        str(request.url)
+        }
+    )
 
 app.include_router(
     repo_router,

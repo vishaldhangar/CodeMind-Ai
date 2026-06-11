@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import asyncio
+import threading
 
 import ollama
 
@@ -136,6 +138,116 @@ class AIAssistantService:
             result["thinking"] = thinking
 
         return result
+
+    async def stream_chat(
+        self,
+        repo_name: str,
+        question: str
+    ):
+        """
+        Streaming version of chat() for SSE.
+
+        Yields Server-Sent Events as an async generator:
+          data: {"token": "Hello"}\n\n
+          ...
+          data: {"done": true, "model": "...", ...}\n\n
+
+        Uses asyncio.Queue to bridge the blocking Ollama
+        stream iterator (in a daemon thread) to the async
+        generator — does NOT block the event loop.
+
+        Qwen3 <think>...</think> tokens are buffered and
+        excluded from the client token stream.
+        """
+
+        model = _get_model()
+
+        # Build context in threadpool (blocking call)
+        context = await asyncio.to_thread(
+            ContextBuilderService().build,
+            repo_name,
+            question
+        )
+
+        system_prompt = self._build_system_prompt(context)
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": question}
+        ]
+
+        options = {"temperature": 0.2, "num_ctx": 8192}
+
+        queue: asyncio.Queue = asyncio.Queue()
+        loop  = asyncio.get_event_loop()
+        _DONE = object()   # end-of-stream sentinel
+
+        def _run_stream():
+            try:
+                for chunk in ollama.chat(
+                    model=model,
+                    messages=messages,
+                    stream=True,
+                    options=options
+                ):
+                    token = chunk.message.content or ""
+                    loop.call_soon_threadsafe(
+                        queue.put_nowait, token
+                    )
+            except Exception as exc:
+                loop.call_soon_threadsafe(
+                    queue.put_nowait,
+                    {"__error__": str(exc)}
+                )
+            finally:
+                loop.call_soon_threadsafe(
+                    queue.put_nowait, _DONE
+                )
+
+        threading.Thread(
+            target=_run_stream, daemon=True
+        ).start()
+
+        full_text = ""
+        in_think  = False
+        think_buf = ""
+
+        while True:
+
+            item = await queue.get()
+
+            if item is _DONE:
+                break
+
+            if isinstance(item, dict) and "__error__" in item:
+                yield (
+                    f"data: "
+                    f"{json.dumps({'error': item['__error__']})}"
+                    f"\n\n"
+                )
+                break
+
+            token: str = item
+            full_text += token
+
+            # ── Filter Qwen3 thinking blocks ──────────
+            if "<think>" in token:
+                in_think = True
+            if in_think:
+                think_buf += token
+                if "</think>" in think_buf:
+                    in_think  = False
+                    think_buf = ""
+                continue
+            # ─────────────────────────────────────────
+
+            yield (
+                f"data: {json.dumps({'token': token})}\n\n"
+            )
+
+        yield (
+            f"data: {json.dumps({'done': True, 'model': model, 'question': question, 'intents': context.get('intents_detected', [])})}\n\n"
+        )
 
     def explain_file(
         self,

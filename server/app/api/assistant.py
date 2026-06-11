@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Query, Body
+from fastapi.responses import StreamingResponse
 from typing import Optional
 from pydantic import BaseModel
 
@@ -97,4 +98,37 @@ def explain_function(
     """
     return service.explain_function(
         repo_name, function_name, show_thinking
+    )
+
+
+@router.post("/{repo_name}/chat/stream")
+async def chat_stream(
+    repo_name: str,
+    body: ChatRequest
+):
+    """
+    Streaming version of chat using Server-Sent Events.
+
+    The frontend should consume this as an EventSource
+    or fetch with ReadableStream.
+
+    Event format:
+      data: {"token": "Hello"}
+      data: {"token": " world"}
+      ...
+      data: {"done": true, "model": "qwen2.5:14b", ...}
+
+    Tokens appear in real-time as Qwen generates them.
+    Qwen3 <think> reasoning blocks are filtered out
+    automatically.
+    """
+
+    return StreamingResponse(
+        service.stream_chat(repo_name, body.question),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":    "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection":       "keep-alive"
+        }
     )
