@@ -11,6 +11,7 @@ from app.api.routes import router as routes_router
 from app.api.database import router as database_router
 from app.api.workflow import router as workflow_router
 from app.api.impact import router as impact_router
+from app.api.knowledge_graph import router as knowledge_graph_router
 
 
 
@@ -84,6 +85,12 @@ app.include_router(
     impact_router,
     prefix="/impact",
     tags=["Impact Analysis"]
+)
+
+app.include_router(
+    knowledge_graph_router,
+    prefix="/knowledge",
+    tags=["Knowledge Graph"]
 )
 
 

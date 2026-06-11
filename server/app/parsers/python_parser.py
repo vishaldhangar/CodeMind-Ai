@@ -23,6 +23,39 @@ class PythonParser:
         imports = []
         function_calls = {}
 
+        # ── Pass 1: collect classes with bases + methods ──
+        # We walk top-level class bodies directly so we can
+        # record which functions are methods of which class.
+        class_method_names: set[str] = set()
+
+        for node in ast.walk(tree):
+
+            if isinstance(node, ast.ClassDef):
+
+                bases = self._extract_bases(node)
+
+                # Direct methods = FunctionDef nodes that
+                # are immediate children of the class body
+                methods = [
+                    item.name
+                    for item in node.body
+                    if isinstance(
+                        item,
+                        (ast.FunctionDef, ast.AsyncFunctionDef)
+                    )
+                ]
+
+                for m in methods:
+                    class_method_names.add(m)
+
+                classes.append({
+                    "name":    node.name,
+                    "line":    node.lineno,
+                    "bases":   bases,
+                    "methods": methods
+                })
+
+        # ── Pass 2: collect functions + imports ───────────
         for node in ast.walk(tree):
 
             if isinstance(
@@ -31,21 +64,14 @@ class PythonParser:
             ):
 
                 functions.append({
-                    "name": node.name,
-                    "line": node.lineno
+                    "name":      node.name,
+                    "line":      node.lineno,
+                    "is_method": node.name in class_method_names
                 })
 
-                # Extract calls made inside this function
                 function_calls[node.name] = (
                     self._extract_calls(node)
                 )
-
-            elif isinstance(node, ast.ClassDef):
-
-                classes.append({
-                    "name": node.name,
-                    "line": node.lineno
-                })
 
             elif isinstance(node, ast.Import):
 
@@ -62,7 +88,7 @@ class PythonParser:
                     for alias in node.names:
 
                         imports.append({
-                            "module": node.module,
+                            "module":        node.module,
                             "imported_name": alias.name,
                             "full_import": (
                                 f"{node.module}.{alias.name}"
@@ -70,11 +96,39 @@ class PythonParser:
                         })
 
         return {
-            "functions": functions,
-            "classes": classes,
-            "imports": imports,
+            "functions":      functions,
+            "classes":        classes,
+            "imports":        imports,
             "function_calls": function_calls
         }
+
+    def _extract_bases(
+        self,
+        class_node: ast.ClassDef
+    ) -> list[str]:
+        """
+        Extract base class names from a ClassDef node.
+
+        class Foo(Bar, baz.Mixin):  →  ["Bar", "baz.Mixin"]
+        """
+
+        bases = []
+
+        for base in class_node.bases:
+
+            if isinstance(base, ast.Name):
+                bases.append(base.id)
+
+            elif isinstance(base, ast.Attribute):
+                # e.g. models.Model  or  db.Base
+                if isinstance(base.value, ast.Name):
+                    bases.append(
+                        f"{base.value.id}.{base.attr}"
+                    )
+                else:
+                    bases.append(base.attr)
+
+        return bases
 
     def _extract_calls(
         self,
