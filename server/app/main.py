@@ -12,6 +12,7 @@ from app.api.database import router as database_router
 from app.api.workflow import router as workflow_router
 from app.api.impact import router as impact_router
 from app.api.knowledge_graph import router as knowledge_graph_router
+from app.api.assistant import router as assistant_router
 
 
 
@@ -91,6 +92,12 @@ app.include_router(
     knowledge_graph_router,
     prefix="/knowledge",
     tags=["Knowledge Graph"]
+)
+
+app.include_router(
+    assistant_router,
+    prefix="/assistant",
+    tags=["AI Assistant"]
 )
 
 

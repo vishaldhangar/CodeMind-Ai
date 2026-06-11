@@ -4,7 +4,5 @@ python-dotenv
 pydantic
 gitpython
 networkx
-tree-sitter
-tree-sitter-python
 pydantic-settings
-networkx
+ollama
