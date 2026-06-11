@@ -12,15 +12,15 @@ from app.services.context_builder_service import (
 # Model preference order — first match that is actually
 # available in Ollama wins
 MODEL_PREFERENCE = [
+    "qwen2.5:14b",
     "qwen3.1:14b",
     "qwen3:14b",
-    "qwen2.5:14b",
     "qwen2.5:7b",
     "qwen3.1:8b",
     "qwen3:8b",
 ]
 
-DEFAULT_MODEL = "qwen2.5:14b"   # fallback if env not set
+DEFAULT_MODEL = "qwen2.5:14b"
 
 
 def _get_model() -> str:
