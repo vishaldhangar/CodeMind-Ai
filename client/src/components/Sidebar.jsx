@@ -21,7 +21,7 @@ const STATUS_LABELS = {
 };
 
 export default function Sidebar() {
-  const { repos, activeRepo, setActiveRepo, importRepo, refreshRepos, activePage, setActivePage } = useApp();
+  const { repos, activeRepo, setActiveRepo, importRepo, refreshRepos, activePage, setActivePage, refresh, analyzing, analyzeStatus } = useApp();
   const [importUrl, setImportUrl]   = useState('');
   const [showImport, setShowImport] = useState(false);
   const [importing, setImporting]   = useState(false);
@@ -216,10 +216,6 @@ export default function Sidebar() {
               Repository Status
             </div>
             <div className="repo-status-row">
-              <span className="repo-status-label">Last indexed</span>
-              <span className="repo-status-value">2 min ago</span>
-            </div>
-            <div className="repo-status-row">
               <span className="repo-status-label">Total files</span>
               <span className="repo-status-value">
                 {activeRepoObj.file_count?.toLocaleString() ?? '—'}
@@ -229,7 +225,35 @@ export default function Sidebar() {
               <span className="repo-status-label">Size</span>
               <span className="repo-status-value">{activeRepoObj.size_mb ?? '—'} MB</span>
             </div>
-            <button className="btn-reindex">⟳ Re-index Repository</button>
+            {analyzing && analyzeStatus && (
+              <div style={{
+                marginTop: 8, padding: '5px 8px',
+                background: 'rgba(99,102,241,0.1)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.714rem', color: 'var(--text-accent)',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{ display: 'inline-flex', gap: 2 }}>
+                  {[0,1,2].map(i => (
+                    <span key={i} style={{
+                      display: 'inline-block', width: 4, height: 4,
+                      background: 'var(--cyan)', borderRadius: '50%',
+                      animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+                    }} />
+                  ))}
+                </span>
+                {analyzeStatus}
+              </div>
+            )}
+            <button
+              className="btn-reindex"
+              onClick={refresh}
+              disabled={analyzing}
+              style={{ opacity: analyzing ? 0.6 : 1, cursor: analyzing ? 'not-allowed' : 'pointer' }}
+            >
+              {analyzing ? '⟳ Re-indexing…' : '⟳ Re-index Repository'}
+            </button>
           </div>
         )}
       </div>

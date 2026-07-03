@@ -6,16 +6,19 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const [repos, setRepos]             = useState([]);
   const [activeRepo, setActiveRepo]   = useState(null);
-  const [activePage, setActivePage]   = useState('overview');  // global nav
+  const [activePage, setActivePage]   = useState('overview');
   const [repoData, setRepoData]       = useState({});
   const [loading, setLoading]         = useState({});
   const [analyzing, setAnalyzing]     = useState({});
   const [analyzeStatus, setAnalyzeStatus] = useState({});
-  const activeRepoRef = useRef(activeRepo);
 
+  // refreshKey: bumping this forces a reload even when activeRepo hasn't changed
+  const [refreshKey, setRefreshKey]   = useState(0);
+
+  const activeRepoRef = useRef(activeRepo);
   useEffect(() => { activeRepoRef.current = activeRepo; }, [activeRepo]);
 
-  // ── Fetch repo list ────────────────────────────────────────────
+  // ── Fetch repo list ──────────────────────────────────────────────
   const refreshRepos = useCallback(async (autoSelect = false) => {
     try {
       const data = await api.listRepos();
@@ -29,23 +32,17 @@ export function AppProvider({ children }) {
 
   useEffect(() => { refreshRepos(true); }, []);
 
-  // ── Analysis pipeline: scan → AST → deps → intelligence ───────
+  // ── Analysis pipeline: scan → AST → deps → intelligence ─────────
   const analyzeRepo = useCallback(async (repoName) => {
     setAnalyzing(a => ({ ...a, [repoName]: true }));
-
-    const step = (msg) =>
-      setAnalyzeStatus(s => ({ ...s, [repoName]: msg }));
-
+    const step = (msg) => setAnalyzeStatus(s => ({ ...s, [repoName]: msg }));
     try {
       step('Scanning files…');
       await api.scan(repoName).catch(() => {});
-
       step('Parsing AST…');
       await api.parseAst(repoName).catch(() => {});
-
       step('Building dependency graph…');
       await api.buildDeps(repoName).catch(() => {});
-
       step('Loading intelligence…');
     } finally {
       setAnalyzing(a => ({ ...a, [repoName]: false }));
@@ -53,17 +50,18 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // ── Load intelligence data for a repo ─────────────────────────
-  const loadRepoData = useCallback(async (repoName) => {
-    if (!repoName || repoData[repoName]?.loaded) return;
+  // ── Load intelligence data (force=true skips the loaded guard) ───
+  const loadRepoData = useCallback(async (repoName, force = false) => {
+    if (!repoName) return;
+
+    // Skip if already loaded — unless forced
+    if (!force && repoData[repoName]?.loaded) return;
 
     setLoading(l => ({ ...l, [repoName]: true }));
 
     try {
-      // Run the analysis pipeline first
       await analyzeRepo(repoName);
 
-      // Now load all intelligence in parallel
       const [arch, wf, routes, db, kg, info, deps] = await Promise.allSettled([
         api.architecture(repoName),
         api.workflows(repoName),
@@ -92,11 +90,17 @@ export function AppProvider({ children }) {
     }
   }, [repoData, analyzeRepo]);
 
+  // Triggered when activeRepo changes (normal navigation)
   useEffect(() => {
     if (activeRepo) loadRepoData(activeRepo);
   }, [activeRepo]);
 
-  // ── Import a repo + poll until done ───────────────────────────
+  // Triggered when refreshKey bumps (manual refresh) — always force reload
+  useEffect(() => {
+    if (refreshKey > 0 && activeRepo) loadRepoData(activeRepo, true);
+  }, [refreshKey]);
+
+  // ── Import a repo + poll until done ─────────────────────────────
   const importRepo = useCallback(async (githubUrl, onStatus) => {
     const result = await api.importRepo(githubUrl);
     const jobId  = result.job_id;
@@ -123,6 +127,15 @@ export function AppProvider({ children }) {
     });
   }, [refreshRepos]);
 
+  // ── refresh(): clear cache + re-run pipeline ─────────────────────
+  const refresh = useCallback(() => {
+    if (!activeRepo) return;
+    // 1. Wipe cached data for this repo
+    setRepoData(d => { const n = { ...d }; delete n[activeRepo]; return n; });
+    // 2. Bump refreshKey → the useEffect above fires loadRepoData(repo, true)
+    setRefreshKey(k => k + 1);
+  }, [activeRepo]);
+
   const data = activeRepo ? repoData[activeRepo] : null;
 
   return (
@@ -136,11 +149,7 @@ export function AppProvider({ children }) {
       analyzeStatus: analyzeStatus[activeRepo] || null,
       importRepo,
       refreshRepos,
-      refresh: () => {
-        if (activeRepo) {
-          setRepoData(d => { const n = { ...d }; delete n[activeRepo]; return n; });
-        }
-      }
+      refresh,
     }}>
       {children}
     </AppContext.Provider>

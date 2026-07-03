@@ -53,6 +53,62 @@
   --shadow-glow:    0 0 20px var(--purple-glow);
 }
 
+/* ── Light Mode ───────────────────────────────────────────────── */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:        #f0f2f8;
+  --bg-sidebar:     #e8eaf3;
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #f7f8fc;
+  --bg-input:       #eef0f8;
+  --bg-tag:         #e4e6f2;
+
+  /* Borders */
+  --border:         rgba(0, 0, 0, 0.09);
+  --border-hover:   rgba(0, 0, 0, 0.16);
+  --border-active:  rgba(99, 102, 241, 0.5);
+
+  /* Accents — keep same brand colours */
+  --purple:         #6366f1;
+  --purple-dark:    #4f46e5;
+  --purple-glow:    rgba(99, 102, 241, 0.15);
+  --cyan:           #0891b2;
+  --cyan-glow:      rgba(8, 145, 178, 0.12);
+  --green:          #059669;
+  --orange:         #d97706;
+  --red:            #dc2626;
+  --yellow:         #ca8a04;
+
+  /* Text */
+  --text-primary:   #111827;
+  --text-secondary: #374151;
+  --text-muted:     #9ca3af;
+  --text-accent:    #4f46e5;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #0891b2 100%);
+  --gradient-card:  linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(8,145,178,0.03) 100%);
+
+  /* Shadows — lighter for light mode */
+  --shadow-card:    0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px var(--border);
+  --shadow-glow:    0 0 16px rgba(99,102,241,0.15);
+}
+
+/* ── Smooth theme transition ─────────────────────────────────── */
+*, *::before, *::after {
+  transition:
+    background-color 0.2s ease,
+    border-color     0.2s ease,
+    color            0.15s ease,
+    box-shadow       0.2s ease;
+}
+/* Don't animate layout-affecting properties */
+.react-flow__node,
+.react-flow__edge,
+canvas {
+  transition: none !important;
+}
+
 /* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -530,12 +586,89 @@ body {
 
 /* ── AI Panel ────────────────────────────────────────────────── */
 .ai-panel {
-  width: var(--ai-panel-w);
-  min-width: var(--ai-panel-w);
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
   overflow: hidden;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expanded state */
+.ai-panel--expanded {
+  width: var(--ai-panel-w);
+  min-width: var(--ai-panel-w);
+}
+
+/* Collapsed state — slim 36px strip */
+.ai-panel--collapsed {
+  width: 36px;
+  min-width: 36px;
+  cursor: pointer;
+}
+
+/* Collapse toggle button inside the header */
+.ai-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.ai-collapse-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+/* Vertical strip shown when collapsed */
+.ai-collapse-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 14px 0 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s;
+}
+.ai-collapse-tab:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.ai-collapse-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ai-collapse-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 0.714rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.ai-collapse-arrow {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-muted);
+  margin-top: auto;
+  padding-bottom: 6px;
 }
 .ai-panel-header {
   padding: 14px 16px;

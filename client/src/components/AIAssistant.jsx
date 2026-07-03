@@ -46,6 +46,7 @@ function formatMarkdown(text) {
 
 export default function AIAssistant() {
   const { activeRepo } = useApp();
+  const [collapsed, setCollapsed] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'user',
@@ -54,47 +55,36 @@ export default function AIAssistant() {
     },
     {
       role: 'ai',
-      content: `The user login process works as follows:
-
-1. User sends credentials to \`POST /api/auth/login\`
-2. \`AuthController.py\` validates the request
-3. \`AuthService.verifyCredentials()\` checks user in database
-4. If valid, JWT token is generated using \`JWTService\`
-5. Token is returned to the client
-6. Client includes token in subsequent requests`,
+      content: `The user login process works as follows:\n\n1. User sends credentials to \`POST /api/auth/login\`\n2. \`AuthController.py\` validates the request\n3. \`AuthService.verifyCredentials()\` checks user in database\n4. If valid, JWT token is generated using \`JWTService\`\n5. Token is returned to the client\n6. Client includes token in subsequent requests`,
       keyFiles: ['authController.py', 'authService.py', 'JWTService.py', 'userModel.py'],
       time: '10:30 AM',
     },
   ]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
-  const [streamingIdx, setStreamingIdx] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!collapsed) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, collapsed]);
 
   const sendMessage = (question) => {
     if (!question.trim() || !activeRepo || streaming) return;
-
     const q = question.trim();
     setInput('');
 
-    // Add user message
-    setMessages(prev => [...prev, { role: 'user', content: q, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
-
-    // Add empty AI message placeholder
-    const aiIdx = messages.length + 1;
+    setMessages(prev => [...prev, {
+      role: 'user', content: q,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }]);
     setMessages(prev => [...prev, { role: 'ai', content: '', streaming: true }]);
     setStreaming(true);
-    setStreamingIdx(aiIdx);
 
     let fullText = '';
-
     api.streamChat(
-      activeRepo,
-      q,
+      activeRepo, q,
       (token) => {
         fullText += token;
         setMessages(prev => {
@@ -106,17 +96,19 @@ export default function AIAssistant() {
           return next;
         });
       },
-      (meta) => {
+      () => {
         setMessages(prev => {
           const next = [...prev];
           const lastIdx = next.length - 1;
           if (next[lastIdx]?.role === 'ai') {
-            next[lastIdx] = { ...next[lastIdx], streaming: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            next[lastIdx] = {
+              ...next[lastIdx], streaming: false,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
           }
           return next;
         });
         setStreaming(false);
-        setStreamingIdx(null);
       },
       (err) => {
         setMessages(prev => {
@@ -132,8 +124,29 @@ export default function AIAssistant() {
     );
   };
 
+  /* ── Collapsed state: shows a slim vertical tab ── */
+  if (collapsed) {
+    return (
+      <aside
+        className="ai-panel ai-panel--collapsed"
+        title="Expand AI Assistant"
+      >
+        {/* Vertical toggle strip */}
+        <button
+          className="ai-collapse-tab"
+          onClick={() => setCollapsed(false)}
+          title="Expand AI Assistant"
+        >
+          <span className="ai-collapse-icon">🧠</span>
+          <span className="ai-collapse-label">AI Assistant</span>
+          <span className="ai-collapse-arrow">‹</span>
+        </button>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="ai-panel">
+    <aside className="ai-panel ai-panel--expanded">
       {/* Header */}
       <div className="ai-panel-header">
         <div className="ai-panel-title">
@@ -143,7 +156,14 @@ export default function AIAssistant() {
             <div className="ai-subtitle">Powered by qwen2.5:14b</div>
           </div>
         </div>
-        <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>⋯</button>
+        {/* Collapse button */}
+        <button
+          className="ai-collapse-btn"
+          onClick={() => setCollapsed(true)}
+          title="Collapse AI Assistant"
+        >
+          ›
+        </button>
       </div>
 
       {/* Messages */}
@@ -156,10 +176,7 @@ export default function AIAssistant() {
             </div>
           ) : (
             <div key={i}>
-              <StreamingMessage
-                content={msg.content}
-                isStreaming={!!msg.streaming}
-              />
+              <StreamingMessage content={msg.content} isStreaming={!!msg.streaming} />
               {msg.keyFiles?.length > 0 && (
                 <div className="key-files">
                   <div className="key-files-label">Key files involved:</div>
