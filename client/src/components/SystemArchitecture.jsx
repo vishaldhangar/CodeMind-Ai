@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useApp } from '../AppContext';
 
 // ── All known tech with display metadata ─────────────────────────
@@ -163,6 +164,8 @@ export default function SystemArchitecture() {
   const arch = data?.arch;
   const ts   = arch?.tech_stack;
 
+  const [showAllEntries, setShowAllEntries] = useState(false);
+
   const pattern     = arch?.architecture_pattern || null;
   const layers      = arch?.detected_layers      || [];
   const entryPoints = arch?.entry_points         || [];
@@ -266,36 +269,46 @@ export default function SystemArchitecture() {
 
       {/* Entry points */}
       {entryPoints.length > 0 && (
-        <div style={{
-          padding: '8px 14px',
-          borderTop: '1px solid var(--border)',
-          display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
-        }}>
-          <span style={{ fontSize: '0.714rem', color: 'var(--text-muted)', flexShrink: 0 }}>
-            🚪 Entry:
-          </span>
-          {entryPoints.slice(0, 3).map((ep, i) => {
-            const path = ep.path || ep.file || ep;
-            const method = ep.method;
-            return (
-              <span key={i} style={{
-                fontFamily: 'monospace', fontSize: '0.7rem',
-                color: 'var(--text-accent)',
-                background: 'rgba(99,102,241,0.08)',
-                padding: '1px 6px', borderRadius: 3,
-                maxWidth: 140, overflow: 'hidden',
-                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }} title={`${method || ''} ${path}`}>
-                {method && <span style={{ color: 'var(--green)', marginRight: 3 }}>{method}</span>}
-                {path}
-              </span>
-            );
-          })}
-          {entryPoints.length > 3 && (
-            <span style={{ fontSize: '0.714rem', color: 'var(--text-muted)' }}>
-              +{entryPoints.length - 3} more
+        <div style={{ borderTop: '1px solid var(--border)' }}>
+          <div style={{
+            padding: '8px 14px',
+            display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '0.714rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+              🚪 Entry:
             </span>
-          )}
+            {(showAllEntries ? entryPoints : entryPoints.slice(0, 3)).map((ep, i) => {
+              const path = ep.path || ep.file || ep;
+              const method = ep.method;
+              return (
+                <span key={i} style={{
+                  fontFamily: 'monospace', fontSize: '0.7rem',
+                  color: 'var(--text-accent)',
+                  background: 'rgba(99,102,241,0.08)',
+                  padding: '1px 6px', borderRadius: 3,
+                  maxWidth: 180, overflow: 'hidden',
+                  textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }} title={`${method || ''} ${path}`}>
+                  {method && <span style={{ color: 'var(--green)', marginRight: 3 }}>{method}</span>}
+                  {path}
+                </span>
+              );
+            })}
+            {entryPoints.length > 3 && (
+              <button
+                onClick={() => setShowAllEntries(v => !v)}
+                style={{
+                  fontSize: '0.714rem', color: 'var(--purple)',
+                  background: 'rgba(99,102,241,0.1)',
+                  border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: 3, padding: '1px 8px',
+                  cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                {showAllEntries ? 'Show less' : `+${entryPoints.length - 3} more`}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

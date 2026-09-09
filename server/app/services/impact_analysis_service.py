@@ -550,6 +550,10 @@ class ImpactAnalysisService:
     # Utility helpers
     # ──────────────────────────────────────────────────
 
+    _JS_TS_EXTS = (
+        '.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs'
+    )
+
     def _file_to_module_names(
         self,
         file_path: str
@@ -558,35 +562,62 @@ class ImpactAnalysisService:
         Convert a file path to all possible module
         name variants that might appear in imports.
 
-        "app/services/auth_service.py"
-         → ["app.services.auth_service",
-            "services.auth_service",
-            "auth_service"]
+        Python: "app/services/auth.py"
+         → ["app.services.auth", "services.auth", "auth"]
+
+        JS/TS: "lib/prisma.js"
+         → ["lib/prisma", "prisma",          ← path-style
+            "lib.prisma.js", "prisma.js"]     ← dot-style fallback
         """
 
-        normalized = (
-            file_path.replace("\\", "/")
-        )
+        normalized = file_path.replace("\\", "/")
 
         # Strip repositories/repo_name/ prefix
         parts = normalized.split("/")
         if parts and parts[0] == "repositories":
             parts = parts[2:]  # strip repos/name
 
-        # Strip .py
-        if parts and parts[-1].endswith(".py"):
-            parts[-1] = parts[-1][:-3]
+        variants: list[str] = []
+        filename = parts[-1] if parts else ""
 
-        # Strip __init__
-        if parts and parts[-1] == "__init__":
-            parts = parts[:-1]
+        is_js_ts = any(
+            filename.endswith(ext)
+            for ext in self._JS_TS_EXTS
+        )
 
-        # Generate all suffix variants
-        variants = []
-        for i in range(len(parts)):
-            module = ".".join(parts[i:])
-            if module:
-                variants.append(module)
+        if is_js_ts:
+            # Strip extension from last segment
+            bare_last = filename
+            for ext in self._JS_TS_EXTS:
+                if bare_last.endswith(ext):
+                    bare_last = bare_last[: -len(ext)]
+                    break
+
+            bare_parts = parts[:-1] + [bare_last]
+
+            # Path-style variants: "lib/prisma", "prisma"
+            for i in range(len(bare_parts)):
+                p = "/".join(bare_parts[i:])
+                if p:
+                    variants.append(p)
+
+            # Also add with-extension variants
+            for i in range(len(parts)):
+                p = "/".join(parts[i:])
+                if p:
+                    variants.append(p)
+
+        else:
+            # Python: strip .py / __init__
+            if parts and parts[-1].endswith(".py"):
+                parts[-1] = parts[-1][:-3]
+            if parts and parts[-1] == "__init__":
+                parts = parts[:-1]
+
+            for i in range(len(parts)):
+                module = ".".join(parts[i:])
+                if module:
+                    variants.append(module)
 
         return variants
 
@@ -597,13 +628,21 @@ class ImpactAnalysisService:
     ) -> bool:
         """Check if a dependency target matches any module variant."""
 
+        t = target.replace("\\", "/")
+
         for module in module_names:
+            m = module.replace("\\", "/")
 
             if (
-                target == module
-                or target.startswith(module + ".")
-                or module.endswith("." + target)
-                or target == module.split(".")[-1]
+                t == m
+                # Python dot-style checks
+                or t.startswith(m + ".")
+                or m.endswith("." + t)
+                or t == m.split(".")[-1]
+                # Path-style checks (JS/TS)
+                or t.endswith("/" + m)
+                or m.endswith("/" + t)
+                or self._same_file(t, m)
             ):
                 return True
 
@@ -618,7 +657,28 @@ class ImpactAnalysisService:
 
         a = file_a.replace("\\", "/").lower()
         b = file_b.replace("\\", "/").lower()
-        return a == b or a.endswith(b) or b.endswith(a)
+        if a == b or a.endswith(b) or b.endswith(a):
+            return True
+        # Compare without file extensions so that
+        # "lib/prisma" matches "lib/prisma.js" etc.
+        a_bare = self._strip_file_ext(a)
+        b_bare = self._strip_file_ext(b)
+        return (
+            a_bare == b_bare
+            or a_bare.endswith(b_bare)
+            or b_bare.endswith(a_bare)
+        )
+
+    _EXT_LIST = (
+        '.js', '.ts', '.jsx', '.tsx',
+        '.mjs', '.cjs', '.py',
+    )
+
+    def _strip_file_ext(self, path: str) -> str:
+        for ext in self._EXT_LIST:
+            if path.endswith(ext):
+                return path[: -len(ext)]
+        return path
 
     def _node_in_file(
         self,

@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { id: 'routes',        icon: '🛤', label: 'APIs & Routes' },
   { id: 'database',      icon: '🗄', label: 'Database' },
   { id: 'impact',        icon: '💥', label: 'Impact Analysis' },
-  { id: 'assistant',     icon: '🤖', label: 'AI Assistant' },
 ];
 
 const STATUS_LABELS = {

@@ -17,7 +17,7 @@ export default function ImpactPage() {
       const data = mode === 'file'
         ? await api.fileImpact(activeRepo, target.trim())
         : await api.fnImpact(activeRepo, target.trim());
-      setResult(data);
+      setResult(data.impact ?? data);
     } catch (e) {
       setError(e.message);
     } finally {

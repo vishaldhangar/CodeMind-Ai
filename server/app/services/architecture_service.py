@@ -195,6 +195,7 @@ class ArchitectureService:
                     core_modules.append({
                         "module": file_path,
                         "call_count": count,
+                        "layer": self._detect_layer(file_path),
                         "reason": "most called internally"
                     })
 
@@ -204,14 +205,38 @@ class ArchitectureService:
             for mod in dep_analytics.get(
                 "top_internal_modules", []
             )[:5]:
-
+                mod_path = mod.get("module", "")
                 core_modules.append({
-                    "module": mod["module"],
-                    "call_count": mod["imports"],
+                    "module": mod_path,
+                    "call_count": mod.get("imports", 0),
+                    "layer": self._detect_layer(mod_path),
                     "reason": "most imported internally"
                 })
 
         return core_modules
+
+    def _detect_layer(self, file_path: str) -> str:
+        """Guess architectural layer from file path segments."""
+        lower = file_path.lower().replace("\\", "/")
+        if any(s in lower for s in ("/services/", "/service/")):
+            return "Service"
+        if any(s in lower for s in ("/api/", "/routes/", "/controllers/", "/handlers/")):
+            return "API"
+        if any(s in lower for s in ("/models/", "/schemas/", "/entities/")):
+            return "Model"
+        if any(s in lower for s in ("/repositories/", "/repo/", "/dao/")):
+            return "Repository"
+        if any(s in lower for s in ("/components/", "/pages/", "/views/", "/ui/")):
+            return "UI"
+        if any(s in lower for s in ("/hooks/", "/context/", "/store/", "/state/")):
+            return "State"
+        if any(s in lower for s in ("/utils/", "/helpers/", "/lib/", "/common/")):
+            return "Utility"
+        if any(s in lower for s in ("/middleware/", "/guards/", "/interceptors/")):
+            return "Middleware"
+        if any(s in lower for s in ("/tests/", "/test/", "__tests__", ".test.", ".spec.")):
+            return "Test"
+        return "—"
 
     # ──────────────────────────────────────────────────
     # Summary generation
