@@ -5,4 +5,5 @@ pydantic
 gitpython
 networkx
 pydantic-settings
-ollama
+openai
+google-genai

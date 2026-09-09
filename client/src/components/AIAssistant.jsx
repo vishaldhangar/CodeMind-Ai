@@ -21,7 +21,7 @@ function StreamingMessage({ content, isStreaming }) {
             <div className="streaming-dots">
               <span /><span /><span />
             </div>
-            qwen2.5:14b
+            Generating...
           </div>
         )}
       </div>
@@ -153,7 +153,7 @@ export default function AIAssistant() {
           <div className="ai-icon">🧠</div>
           <div>
             <div className="ai-title-text">AI Assistant</div>
-            <div className="ai-subtitle">Powered by qwen2.5:14b</div>
+            <div className="ai-subtitle">Powered by OpenAI / Gemini</div>
           </div>
         </div>
         {/* Collapse button */}

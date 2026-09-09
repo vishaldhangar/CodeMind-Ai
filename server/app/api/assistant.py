@@ -23,7 +23,7 @@ class ChatRequest(BaseModel):
 @router.get("/health")
 def health_check():
     """
-    Check if Ollama is running and qwen3.1:14b is loaded.
+    Check if the configured AI provider (OpenAI or Gemini) is reachable and the API key is set.
     """
     return service.health_check()
 
@@ -41,11 +41,11 @@ def chat(
          (architecture / workflow / database / routes / impact)
       2. Pulls targeted intelligence from relevant layers
       3. Builds a rich system prompt with codebase context
-      4. Queries Qwen3.1:14b via Ollama
+      4. Queries the configured AI provider (OpenAI / Gemini)
       5. Returns a structured, markdown-formatted answer
 
-    Set show_thinking=true to also receive Qwen3's
-    internal reasoning process.
+    Set show_thinking=true to also receive the model's
+    internal reasoning process (if supported).
     """
     return service.chat(
         repo_name,
@@ -116,11 +116,9 @@ async def chat_stream(
       data: {"token": "Hello"}
       data: {"token": " world"}
       ...
-      data: {"done": true, "model": "qwen2.5:14b", ...}
+      data: {"done": true, "model": "gpt-4o-mini", ...}
 
-    Tokens appear in real-time as Qwen generates them.
-    Qwen3 <think> reasoning blocks are filtered out
-    automatically.
+    Tokens appear in real-time as the model generates them.
     """
 
     return StreamingResponse(
