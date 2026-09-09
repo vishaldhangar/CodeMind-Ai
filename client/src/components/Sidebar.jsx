@@ -65,7 +65,7 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <div className="logo-icon">🧠</div>
         <div className="logo-text">
-          <div className="logo-title">CodeMind AI</div>
+          <div className="logo-title" style={{ background: 'var(--gradient-text, linear-gradient(135deg, #a78bfa 0%, #67e8f9 100%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>CodeMind AI</div>
           <div className="logo-sub">Codebase Intelligence</div>
         </div>
       </div>
@@ -74,6 +74,7 @@ export default function Sidebar() {
       <button
         className="sidebar-import"
         onClick={() => { setShowImport(s => !s); setImportStatus(null); }}
+        style={{ background: 'var(--gradient-brand)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)', border: 'none', color: '#fff', borderRadius: 'var(--radius-md)', padding: '10px 16px', width: 'calc(100% - 24px)', fontSize: '0.857rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s ease' }}
       >
         <span>＋</span> Import Repository
       </button>

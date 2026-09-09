@@ -76,7 +76,7 @@ export default function TopBar() {
   }, [setActivePage]);
 
   /* ── Theme toggle ────────────────────────────────────────── */
-  const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
+  const [theme, setTheme] = useState('light'); // 'dark' | 'light'
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
